@@ -4,12 +4,19 @@
 
 ![Banner](./banner.svg)
 
+- [Enable step-by-step debugging in vscode](#enable-step-by-step-debugging-in-vscode)
+- [Output a text on the console when phpunit is started with --debug argument](#output-a-text-on-the-console-when-phpunit-is-started-with---debug-argument)
+
 ## Enable step-by-step debugging in vscode
 
 1. Make sure your `phpunit.xml` file didn't have the `processIsolation` set to `true`, if so, change the value to `false` *(there is no way to disable this flag using command line arguments)*,
 2. Add a breakpoint in one of your test scenario and press <kbd>F5</kbd> to start the debugger in vscode,
-3. On the command line, run `vendor/bin/phpunit --no-coverage --configuration .config/phpunit.xml tests/Unit/app/Console/Commands/CheckDelegationsTest.php`,
+3. On the command line, run `vendor/bin/phpunit --stop-on-failure --no-coverage --configuration .config/phpunit.xml tests/Unit/app/Core`,
 4. vscode will stop on the breakpoint and you'll be able to use the debugger.
+
+`--stop-on-failure` is not strictly required but recommended during local development to not wait until all the tests suite is finished.
+
+Under Laravel 8+, you can also use `php artisan test --stop-on-failure  --no-coverage --configuration .config/phpunit.xml tests/Unit/app/Core` for a better user experience.
 
 ## Output a text on the console when phpunit is started with --debug argument
 
