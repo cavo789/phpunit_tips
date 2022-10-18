@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD033 -->
+
 # PhpUnit - Tips
 
 > Some tips and tricks for phpunit
@@ -7,10 +9,11 @@
 - [Enable step-by-step debugging in vscode](#enable-step-by-step-debugging-in-vscode)
 - [Output a text on the console when phpunit is started with --debug argument](#output-a-text-on-the-console-when-phpunit-is-started-with---debug-argument)
 - [Improve performance tips](#improve-performance-tips)
-  - [Avoid to use XDEBUG for code coverage but use phpcov](#avoid-to-use-xdebug-for-code-coverage-but-use-phpcov)
-  - [Process isolation](#process-isolation)
+  - [HIGH - Avoid to use XDEBUG for code coverage but use phpcov](#high---avoid-to-use-xdebug-for-code-coverage-but-use-phpcov)
+  - [HIGH - Parallel tests with paratest](#high---parallel-tests-with-paratest)
+  - [HIGH - Process isolation](#high---process-isolation)
     - [Cannot declare class ... because the name is already in use](#cannot-declare-class--because-the-name-is-already-in-use)
-  - [BCRYPT](#bcrypt)
+  - [LOW - BCRYPT](#low---bcrypt)
 
 ## Enable step-by-step debugging in vscode
 
@@ -55,7 +58,9 @@ And, from now, to use it write something like `$this->debug('Using input file: '
 
 ## Improve performance tips
 
-### Avoid to use XDEBUG for code coverage but use phpcov
+A `HIGH` tip will greatly improve performance while a `LOW` tip will have less significant impact.
+
+### HIGH - Avoid to use XDEBUG for code coverage but use phpcov
 
 > [40 times faster PHP Code Coverage Reporting with PCOV](https://www.kurmis.com/2020/01/15/pcov-for-faster-code-coverage.html)
 
@@ -90,7 +95,45 @@ Your `phpunit.xml` file can be defined like below to define where to put the cod
 </phpunit>
 ```
 
-### Process isolation
+### HIGH - Parallel tests with paratest
+
+> [https://github.com/paratestphp/paratest](https://github.com/paratestphp/paratest)
+
+If you're using Laravel 8 or greater, you can run tests using the `--parallel` argument:
+
+```bash
+php artisan test --parallel --no-coverage --configuration .config/phpunit.xml 
+```
+
+It will works out-of-the-box i.e. you don't need to do something to make it works.
+
+Note: if you're using `phpunit.xml` to restrict the execution to some groups (`include` or `exclude`), **you'll need to specify them on the command line**, it seems paratest can't do this by itself.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit ...>
+    <groups>
+        <include>
+            <group>MyGroup1</group>
+            <group>MyGroup2</group>
+            <group>MyGroup3</group>
+            <group>MyGroup4</group>
+        </include>
+    </groups>
+</phpunit>
+```
+
+```bash
+# Include groups 
+php artisan test --parallel --no-coverage --configuration .config/phpunit.xml --group="MyGroup1,MyGroup2,MyGroup3,MyGroup4"
+```
+
+```bash
+# Exclude groups
+php artisan test --parallel --no-coverage --configuration .config/phpunit.xml --exclude-group="MyGroup1,MyGroup2,MyGroup3,MyGroup4"
+```
+
+### HIGH - Process isolation
 
 Running phpunit with process isolation means that every tests will be fired in a "refreshed" environment and this is time consuming.
 
@@ -103,7 +146,7 @@ The ideal world is to be able to set `processIsolation="false"` in your `phpunit
 </phpunit>
 ```
 
-Be careful with `process_isolation=false` since this can conduct to unpredictable behaviours.
+Be careful with `process_isolation=false` since this can conduct to unpredictable behaviour.
 
 The solution is to edit that class and add these two doc-block notations for the class itself:
 
@@ -127,9 +170,9 @@ When a class has been already *mocked-up*, an instance already exists in memory 
 PHP Fatal error:  Cannot declare class ..., because the name is already in use in ... on line ...
 ```
 
-### BCRYPT
+### LOW - BCRYPT
 
-During tests, we can set `BCRYPT` to just 1 i.e. we don't need very secure passwords (crypted more than once); it's just for tests purposes so set `BCRYPT` to the smallest number: `1`.
+During tests, we can set `BCRYPT` to just 1 i.e. we don't need very secure passwords (encrypted more than once); it's just for tests purposes so set `BCRYPT` to the smallest number: `1`.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>

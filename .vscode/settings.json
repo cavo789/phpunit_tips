@@ -1,5 +1,9 @@
 {
     "cSpell.words": [
-        "fwrite"
+        "behaviour",
+        "fwrite",
+        "paratest",
+        "PCOV",
+        "pecl"
     ]
 }
