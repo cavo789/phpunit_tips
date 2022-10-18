@@ -11,6 +11,7 @@
 - [Improve performance tips](#improve-performance-tips)
   - [HIGH - Avoid to use XDEBUG for code coverage but use phpcov](#high---avoid-to-use-xdebug-for-code-coverage-but-use-phpcov)
   - [HIGH - Parallel tests with paratest](#high---parallel-tests-with-paratest)
+  - [HIGH - Multiple stages in your pipeline](#high---multiple-stages-in-your-pipeline)
   - [HIGH - Process isolation](#high---process-isolation)
     - [Cannot declare class ... because the name is already in use](#cannot-declare-class--because-the-name-is-already-in-use)
   - [LOW - BCRYPT](#low---bcrypt)
@@ -132,6 +133,40 @@ php artisan test --parallel --no-coverage --configuration .config/phpunit.xml --
 # Exclude groups
 php artisan test --parallel --no-coverage --configuration .config/phpunit.xml --exclude-group="MyGroup1,MyGroup2,MyGroup3,MyGroup4"
 ```
+
+### HIGH - Multiple stages in your pipeline
+
+Even if you've a single `phpunit.xml` file for all your tests; you can create different suites. In the example below, we've all our test classes in our folder `tests/Unit/app/`.
+
+We've created different sub-folders by themes like testing the console, testing core features, testing events, ...
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit ... >
+    <testsuites>
+        <testsuite name="console">
+            <directory suffix="Test.php">tests/Unit/app/Console</directory>
+        </testsuite>
+        <testsuite name="core">
+            <directory suffix="Test.php">tests/Unit/app/Core</directory>
+        </testsuite>
+        <testsuite name="events">
+            <directory suffix="Test.php">tests/Unit/app/Events</directory>
+        </testsuite>
+        ...
+    </testsuites>
+</phpunit>
+```
+
+To run a given suite, we'll use the `--testsuite` argument:
+
+```bash
+php artisan test --parallel --configuration=.config/phpunit.xml --testsuite console
+```
+
+So, now, the idea is to have a CI file (like `.gitlab-ci.yml`) and as many stages that we've test suites:
+
+![Multiple stages in your pipeline](./images/multiple_stages.png)
 
 ### HIGH - Process isolation
 
