@@ -9,12 +9,15 @@
 - [Enable step-by-step debugging in vscode](#enable-step-by-step-debugging-in-vscode)
 - [Output a text on the console when phpunit is started with --debug argument](#output-a-text-on-the-console-when-phpunit-is-started-with---debug-argument)
 - [Improve performance tips](#improve-performance-tips)
-  - [HIGH - Avoid to use XDEBUG for code coverage but use phpcov](#high---avoid-to-use-xdebug-for-code-coverage-but-use-phpcov)
   - [HIGH - Parallel tests with paratest](#high---parallel-tests-with-paratest)
+  - [HIGH - Avoid to use XDEBUG for code coverage but use phpcov](#high---avoid-to-use-xdebug-for-code-coverage-but-use-phpcov)
   - [HIGH - Multiple stages in your pipeline](#high---multiple-stages-in-your-pipeline)
-  - [HIGH - Process isolation](#high---process-isolation)
-    - [Cannot declare class ... because the name is already in use](#cannot-declare-class--because-the-name-is-already-in-use)
+  - [MEDIUM - Prefer vendor/bin/phpunit instead of php artisan test (only if not running parallel tests)](#medium---prefer-vendorbinphpunit-instead-of-php-artisan-test-only-if-not-running-parallel-tests)
   - [LOW - BCRYPT](#low---bcrypt)
+  - [LOW - Process isolation](#low---process-isolation)
+    - [Cannot declare class ... because the name is already in use](#cannot-declare-class--because-the-name-is-already-in-use)
+- [FAQ](#faq)
+  - [The test is running alone but not with another](#the-test-is-running-alone-but-not-with-another)
 
 ## Enable step-by-step debugging in vscode
 
@@ -61,6 +64,62 @@ And, from now, to use it write something like `$this->debug('Using input file: '
 
 A `HIGH` tip will greatly improve performance while a `LOW` tip will have less significant impact.
 
+### HIGH - Parallel tests with paratest
+
+> [https://github.com/paratestphp/paratest](https://github.com/paratestphp/paratest)
+
+If you're using Laravel 8 or greater, you can run tests using the `--parallel` argument:
+
+```bash
+php artisan test --parallel --no-coverage --configuration .config/phpunit.xml 
+```
+
+Be careful: `--parallel` should be the first argument; not recognized otherwise.
+
+It will works out-of-the-box i.e. you don't need to do something to make it works.
+
+Note: if you're using `phpunit.xml` to restrict the execution to some groups (`include` or `exclude`), **you'll need to specify them on the command line**, it seems paratest can't do this by itself.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit ...>
+    <groups>
+        <include>
+            <group>MyGroup1</group>
+            <group>MyGroup2</group>
+            <group>MyGroup3</group>
+            <group>MyGroup4</group>
+        </include>
+    </groups>
+</phpunit>
+```
+
+```bash
+# Include groups 
+php artisan test --parallel --no-coverage --configuration .config/phpunit.xml --group="MyGroup1,MyGroup2,MyGroup3,MyGroup4"
+```
+
+```bash
+# Exclude groups
+php artisan test --parallel --no-coverage --configuration .config/phpunit.xml --exclude-group="MyGroup1,MyGroup2,MyGroup3,MyGroup4"
+```
+
+Tip: instead of using groups (include/exclude), prefer to create `test-suite` as illustrated below, in this document.
+
+Below a summary of some tests with and without parallel tests (using Laravel here). As you can see, the gain is huge: ==**Almost four times faster!**==
+
+| test-suite   | # tests | php artisan test | php artisan test --parallel |
+| ------------ | ------: | ---------------: | --------------------------: |
+| console      |      13 |        94.41 sec |                   63.61 sec |
+| core         |      12 |       102.79 sec |                   52.88 sec |
+| events       |       1 |         6.57 sec |                    7.09 sec |
+| factories    |       6 |        54.08 sec |                   37.53 sec |
+| fdm          |       2 |        12.68 sec |                    7.45 sec |
+| http         |     223 |      3581.28 sec |                  785.36 sec |
+| models       |       3 |        28.14 sec |                    12.5 sec |
+| repositories |      11 |        96.23 sec |                   25.42 sec |
+| **total**    | **271** |  **3976.18 sec** |              **991.84 sec** |
+
 ### HIGH - Avoid to use XDEBUG for code coverage but use phpcov
 
 > [40 times faster PHP Code Coverage Reporting with PCOV](https://www.kurmis.com/2020/01/15/pcov-for-faster-code-coverage.html)
@@ -96,43 +155,7 @@ Your `phpunit.xml` file can be defined like below to define where to put the cod
 </phpunit>
 ```
 
-### HIGH - Parallel tests with paratest
-
-> [https://github.com/paratestphp/paratest](https://github.com/paratestphp/paratest)
-
-If you're using Laravel 8 or greater, you can run tests using the `--parallel` argument:
-
-```bash
-php artisan test --parallel --no-coverage --configuration .config/phpunit.xml 
-```
-
-It will works out-of-the-box i.e. you don't need to do something to make it works.
-
-Note: if you're using `phpunit.xml` to restrict the execution to some groups (`include` or `exclude`), **you'll need to specify them on the command line**, it seems paratest can't do this by itself.
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit ...>
-    <groups>
-        <include>
-            <group>MyGroup1</group>
-            <group>MyGroup2</group>
-            <group>MyGroup3</group>
-            <group>MyGroup4</group>
-        </include>
-    </groups>
-</phpunit>
-```
-
-```bash
-# Include groups 
-php artisan test --parallel --no-coverage --configuration .config/phpunit.xml --group="MyGroup1,MyGroup2,MyGroup3,MyGroup4"
-```
-
-```bash
-# Exclude groups
-php artisan test --parallel --no-coverage --configuration .config/phpunit.xml --exclude-group="MyGroup1,MyGroup2,MyGroup3,MyGroup4"
-```
+During my tests, ==the gain was about 50% i.e. two times faster with exactly the same feature (no loss).==
 
 ### HIGH - Multiple stages in your pipeline
 
@@ -168,42 +191,54 @@ So, now, the idea is to have a CI file (like `.gitlab-ci.yml`) and as many stage
 
 ![Multiple stages in your pipeline](./images/multiple_stages.png)
 
-### HIGH - Process isolation
+### MEDIUM - Prefer vendor/bin/phpunit instead of php artisan test (only if not running parallel tests)
 
-Running phpunit with process isolation means that every tests will be fired in a "refreshed" environment and this is time consuming.
+If you're coding with Laravel and don't want parallel tests, prefer `vendor/bin/phpunit` (faster) and not `php artisan test` (slower).
 
-The ideal world is to be able to set `processIsolation="false"` in your `phpunit.xml` file like this:
+Below the same test suite, first started with `vendor/bin/phpunit`; it takes 97 seconds to complete. The same with `php artisan test` takes 105 seconds.
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit ... processIsolation="false" ...>
-    ...
-</phpunit>
+```bash
+>vendor/bin/phpunit --no-coverage --configuration .config/phpunit.xml --testsuite core
+
+PHPUnit 9.5.25
+
+............                                            12 / 12 (100%)
+
+Time: 01:37.450, Memory: 52.50 MB
+
+OK (12 tests, 176 assertions)
 ```
 
-Be careful with `process_isolation=false` since this can conduct to unpredictable behaviour.
+```bash
+>php artisan test --no-coverage --configuration .config/phpunit.xml --testsuite core
 
-The solution is to edit that class and add these two doc-block notations for the class itself:
+   PASS  Tests\Unit\Core\Conditions\EvaluatedHasBeenEvaluatorDuringCycleTest
+  ✓ test condition
 
-```php
-/**
- * @runInSeparateProcess
- * @preserveGlobalState disabled
- */
-class MyTestTest extends PHPUnit\Framework\TestCase
+   PASS  Tests\Unit\Core\Conditions\ContentConditionsTest
+  ✓ check with data set "#1"
+  ✓ check with data set "#2"
+  ✓ check with data set "#3"
+
+   PASS  Tests\Unit\Core\Conditions\ContentMailConditionsTest
+  ✓ check with data set "#1"
+  ✓ check with data set "#2"
+  ✓ check with data set "#3"
+
+   PASS  Tests\Unit\Core\Roles\ManagerTest
+  ✓ get available role ids
+  ✓ get available role ids with data set #1
+  ✓ get available role ids with data set #2
+  ✓ get available role ids with data set #3
+
+   PASS  Tests\Unit\Core\RouteTest
+  ✓ check end points
+
+  Tests:  12 passed
+  Time:   105.22s
 ```
 
-We can also run that particular in the CLI using the `--process-isolation` argument.
-
-#### Cannot declare class ... because the name is already in use
-
-When your tests is using a mock-up like, for Laravel, `Mockery::mock`, you'll get a *Cannot declare class* error **as soon as** you'll ask code coverage. This because the code coverage will load every classes of your project and will detect if the class is covered or not.
-
-When a class has been already *mocked-up*, an instance already exists in memory and thus, we'll get the error.
-
-```text
-PHP Fatal error:  Cannot declare class ..., because the name is already in use in ... on line ...
-```
+Important: but, as mentioned earlier, running parallel tests are a major performance optimization so, this tip is valid only if you don't wan't / can't use parallel tests (older version of Laravel f.i.).
 
 ### LOW - BCRYPT
 
@@ -217,4 +252,75 @@ During tests, we can set `BCRYPT` to just 1 i.e. we don't need very secure passw
         <env name="BCRYPT_ROUNDS" value="1" />
     </php>
 </phpunit>
+```
+
+### LOW - Process isolation
+
+Running phpunit with process isolation means that every tests will be fired in a "refreshed" environment and this is time consuming.
+
+The ideal world is to be able to set `processIsolation="false"` in your `phpunit.xml` file like this:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit ... processIsolation="false" ...>
+    ...
+</phpunit>
+```
+
+Important: ==**Be careful with `process_isolation=false` since this can conduct to unpredictable behaviour.**==
+
+The solution is to edit that class and add these two doc-block notations for the class itself:
+
+```php
+/**
+ * @runInSeparateProcess
+ * @preserveGlobalState disabled
+ */
+class MyTestTest extends PHPUnit\Framework\TestCase
+```
+
+We can also run that particular in the CLI using the `--process-isolation` argument.
+
+Below a summary of some tests. We can see that, in general, set `process_isolation=false` gives better results (last column) but not always. We can see that, for our `http` suite, it's worst. Perhaps because, in that suite, I was forced to use the `@runInSeparateProcess` annotation more than once and thus, there was a mix of configuration items and this is not optimized...  Some suites like `core` don't have mix and we can see the result is better.  ==**But, globally, the difference isn't really significant.**==
+
+| suite        | # tests |  isolation=true | isolation=false |
+| ------------ | ------: | --------------: | --------------: |
+| console      |      13 |       94.41 sec |       95.24 sec |
+| core         |      12 |      102.79 sec |       93.84 sec |
+| events       |       1 |        6.57 sec |        6.48 sec |
+| factories    |       6 |       54.08 sec |       56.83 sec |
+| fdm          |       2 |       12.68 sec |       14.22 sec |
+| http         |     223 |     3581.28 sec |     3680.57 sec |
+| models       |       3 |       28.14 sec |       24.91 sec |
+| repositories |      11 |       96.23 sec |        97.5 sec |
+| **total**    | **271** | **3976.18 sec** | **4069.59 sec** |
+
+#### Cannot declare class ... because the name is already in use
+
+When your tests is using a mock-up like, for Laravel, `Mockery::mock`, you'll get a *Cannot declare class* error **as soon as** you'll ask code coverage. This because the code coverage will load every classes of your project and will detect if the class is covered or not.
+
+When a class has been already *mocked-up*, an instance already exists in memory and thus, we'll get the error.
+
+```text
+PHP Fatal error:  Cannot declare class ..., because the name is already in use in ... on line ...
+```
+
+## FAQ
+
+### The test is running alone but not with another
+
+Running the test alone (f.i. using the `--filter` option) is successful but the same test fails when fired with another.
+
+The error message can vary, here is one (for a Laravel application): *PHP Fatal error:  Uncaught ReflectionException: Class "config" does not exist*
+
+The problem is probably linked to the isolation of processes. Try to add the two annotations below in the PHP docblock of the class:
+
+```php
+/**
+ * @preserveGlobalState disabled
+ * @runTestsInSeparateProcesses
+ */
+class myClass extends TestCase {
+    /* ... */
+}
 ```
