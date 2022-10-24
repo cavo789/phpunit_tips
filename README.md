@@ -16,6 +16,7 @@
   - [LOW - BCRYPT](#low---bcrypt)
   - [LOW - Process isolation](#low---process-isolation)
     - [Cannot declare class ... because the name is already in use](#cannot-declare-class--because-the-name-is-already-in-use)
+  - [Identify slowest tests](#identify-slowest-tests)
 - [FAQ](#faq)
   - [The test is running alone but not with another](#the-test-is-running-alone-but-not-with-another)
 
@@ -123,6 +124,10 @@ Below a summary of some tests with and without parallel tests (using Laravel her
 ### HIGH - Avoid to use XDEBUG for code coverage but use phpcov
 
 > [40 times faster PHP Code Coverage Reporting with PCOV](https://www.kurmis.com/2020/01/15/pcov-for-faster-code-coverage.html)
+
+![PHP Code coverage benchmark](./images/php-code-coverage-benchmark-php8.svg)
+
+*source: <https://php.watch/articles/php-code-coverage-comparison>*
 
 Install the pcov PHP extension and stop using XDEBUG (`XDEBUG_MODE=off`) will increase performance significantly.
 
@@ -304,6 +309,16 @@ When a class has been already *mocked-up*, an instance already exists in memory 
 ```text
 PHP Fatal error:  Cannot declare class ..., because the name is already in use in ... on line ...
 ```
+
+### Identify slowest tests
+
+The [PHPUNit report](https://marmelab.com/phpunit-d3-report/) online visualization tool will allow to identify which tests are the slowest ones.
+
+First, you'll need to generate a report using the `--log-junit report.xml` argument (f.i. `phpunit --configuration .config/phpunit.xml --log-junit report.xml`). Then upload the `report.xml` file on [PHPUNit report](https://marmelab.com/phpunit-d3-report/) and click on the `Generate` button.
+
+The image below illustrate the case where we've one fail test (in red), three risky tests (in yellow) and the successful ones (in green). How bigger the circle is, how much time it takes.
+
+![Identify slowest tests](./images/slowest_tests.png)
 
 ## FAQ
 
