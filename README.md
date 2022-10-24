@@ -17,6 +17,7 @@
   - [LOW - Process isolation](#low---process-isolation)
     - [Cannot declare class ... because the name is already in use](#cannot-declare-class--because-the-name-is-already-in-use)
   - [Identify slowest tests](#identify-slowest-tests)
+- [GitLab - Show code coverage](#gitlab---show-code-coverage)
 - [FAQ](#faq)
   - [The test is running alone but not with another](#the-test-is-running-alone-but-not-with-another)
 
@@ -319,6 +320,26 @@ First, you'll need to generate a report using the `--log-junit report.xml` argum
 The image below illustrate the case where we've one fail test (in red), three risky tests (in yellow) and the successful ones (in green). How bigger the circle is, how much time it takes.
 
 ![Identify slowest tests](./images/slowest_tests.png)
+
+## GitLab - Show code coverage
+
+If you've code coverage enabled, your Gitlab CI html output will probably display something like:
+
+```text
+Code Coverage Report:         
+   2022-10-21 16:05:33         
+                               
+  Summary:                     
+   Classes: 30.26% (200/661)   
+   Methods: 42.28% (989/2339)  
+   Lines:   51.31% (7113/13862)
+```
+
+The code coverage percentage is displayed on the line starting with `Lines:`.
+
+In order to display it like below (in the top right corner of the job output); you'll need to go to the `CI / CD Settings` page of the repository, then expand `General pipelines` and scroll down to the `Test coverage parsing` area. There you'll need to specify a regular expression that will match the `Lines:` line. A working regex can be: **`/^\s*Lines:\s*\d+.\d+\%/`**.
+
+![Showing code coverage](./images/code_coverage_result.png)
 
 ## FAQ
 
